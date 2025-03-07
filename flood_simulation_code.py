@@ -83,20 +83,7 @@ total_base_station_influenced_loss = 0
 def flood_simulation(buildings_file, roads_file, base_stations_file, power_stations_file, output_folder,
                      output_shp_folder,
                      water_depth_folder, interval=300):
-    """
-    执行洪水模拟，生成洪水扩散动画并保存每一帧图片。
-
-    参数：
-        - dem_file (str): DEM文件路径
-        - buildings_file (str): 建筑矢量数据文件路径
-        - roads_file (str): 道路矢量数据文件路径
-        - base_stations_file (str): 基站矢量数据文件路径
-        - power_stations_file (str): 电站矢量数据文件路径
-        - output_folder (str): 输出图片的文件夹路径
-        - river_boundary_height (float): 河道边界初始高度
-        - interval (int): 每帧间隔时间（分钟）
-    """
-
+                       
     # 创建输出文件夹（如果不存在）
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -115,31 +102,7 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
     road_gdf['road_id'] = range(len(road_gdf))
     base_station_gdf['base_station_id'] = range(len(base_station_gdf))
     power_station_gdf['power_station_id'] = range(len(power_station_gdf))
-    '''
-    # 创建图形和坐标轴
-    fig, ax = plt.subplots()
-    # 获取数据的坐标范围
-    buildings_bounds = building_gdf.total_bounds
-    print(buildings_bounds)
 
-    # 设置坐标范围
-    min_x, min_y, max_x, max_y = buildings_bounds
-    width = max_x - min_x
-    height = max_y - min_y
-
-    # 根据数据的宽度和高度动态设置图形的大小
-    # 调整宽高比（aspect ratio）为数据的宽高比
-    aspect_ratio = width / height
-    fig_width = 12  # 固定图形宽度
-    fig_height = fig_width / aspect_ratio  # 自动计算高度以保持宽高比
-
-    # 创建图形和坐标轴
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))  # 自动调整图形大小
-
-    # 设置坐标范围
-    ax.set_xlim([min_x, max_x])
-    ax.set_ylim([min_y, max_y])
-    '''
     # 创建CSV文件并写入标题行
     # 定义保存文件的文件夹和文件路径
     # output_folder = "output_folder"
@@ -202,17 +165,10 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
                 'end_y': [coord[1] for coord in end_coords]
             }, crs="EPSG:32650")  # 使用合适的投影坐标系
             lines_filename = os.path.join("output_shp", f"influence_lines_frame_{frame:03d}.shp")
-            # if not os.path.exists("output_shp"):
-            # os.makedirs("output_shp")
+
             lines_gdf.to_file(lines_filename, driver="ESRI Shapefile", encoding="utf-8")
         else:
             print(f"No influence lines to save for frame {frame}.")
-
-    # 示例调用（在每一帧的计算结束后）
-    # record_frame_data(current_frame, current_risk, current_loss)
-
-    # print("water_depth_folder type:", type(water_depth_folder))
-    # print("water_depth_folder value:", water_depth_folder)
 
     water_depth_file = os.path.join(water_depth_folder, f'water_depth_frame_000.tif')
     with rasterio.open(water_depth_file) as water_depth_raster:
@@ -457,8 +413,7 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
                 risk = probability * unit_damage_loss_building2 / building_area
                 building_gdf.at[idx, 'risk'] = risk
                 total_building_risk += risk
-                # print('frame:', frame, 'total_building_risk2:', total_building_risk)
-                # print('帧数：',frame,'面积：',building_area)
+
             # 根据建筑状态设置颜色
             if building_gdf.at[idx, 'status'] == 'Damaged':
                 building_color = 'red'
@@ -469,9 +424,6 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
             else:
                 building_color = 'LightGrey'
                 building_normal_area +=building.geometry.area
-            #print(f"受损建筑面积: {building_damage_area:.2f} 平方米")
-            #print(f"受影响建筑面积: {building_influenced_area:.2f} 平方米")
-            #print(f"正常建筑面积: {building_normal_area:.2f} 平方米")
 
             if building.geometry.geom_type == 'Polygon':
                 ax.fill(*building.geometry.exterior.xy, color=building_color)
@@ -518,8 +470,6 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
                     power_station_normal_count += 1  # 统计正常电站数量
                 # 绘制电站
                 ax.scatter(x, y, color=power_color, s=25, marker='s', zorder=4)
-            #print(f"Damaged power stations: {power_station_damage_count}")
-            #print(f"Normal power stations: {power_station_normal_count}")
 
             # 计算损失和风险
             if power_station_gdf.at[idx, 'status'] == 'Damaged':
@@ -582,7 +532,7 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
                 probability = calculate_road_damage_probability(max_depth)  # 基于最大水深计算破坏概率
                 # 在道路中间绘制概率
                 mid_x, mid_y = road.geometry.centroid.x, road.geometry.centroid.y
-                # ax.text(mid_x, mid_y, f'{probability:.2f}', fontsize=3, color='black')
+
 
                 # 计算风险
                 risk = probability * unit_damage_loss_road
@@ -651,21 +601,6 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
                                             [power_station.geometry.y, center_y],
                                             color='purple', linestyle='--', linewidth=1, zorder=3)
 
-                                    '''
-                                    if (p_x, p_y) in marked_power_station_texts:
-                                        # 更新原有标注
-                                        marked_power_station_texts[(p_x, p_y)].set_text(
-                                            f'Risk: {current_connection_p_r_risk:.2f}')
-                                    else:
-                                        # 创建新的标注
-                                        text = ax.text(p_x - 100, p_y - 100, f'Risk: {current_connection_p_r_risk:.2f}',
-                                                       color='blue', fontsize=6, ha='center', fontweight='bold')
-                                        marked_power_station_texts[(p_x, p_y)] = text  # 将新标注存入字典
-                                    # 更新风险值字典
-                                    p_r_risk_values[(p_x, p_y)] = current_connection_p_r_risk  # 存储最终值
-                                # break
-                                # 更新上一帧状态'''
-
             road_previous_state[idx] = road_gdf.at[idx, 'status']
 
             # 根据道路状态设置颜色
@@ -695,7 +630,6 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
                 probability = calculate_road_damage_probability(max_depth)  # 基于最大水深计算破坏概率
                 # 在道路中间绘制概率
                 mid_x, mid_y = road.geometry.centroid.x, road.geometry.centroid.y
-                # ax.text(mid_x, mid_y, f'{probability:.2f}', fontsize=3, color='black')
 
                 # 计算风险
                 risk = probability * unit_damage_loss_road
@@ -814,25 +748,7 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
                                             linewidth=1, zorder=3)
                                     # 更新基站状态
                                     base_station_gdf.at[idx, 'status'] = 'Influenced'
-                                    '''
-                                    if (other_x, other_y) in marked_base_station_texts:
-                                        # 更新原有标注
-                                        marked_base_station_texts[(other_x, other_y)].set_text(
-                                            f'Risk: {current_connection_b_b_risk:.2f}')
-                                    else:
-                                        # 创建新的标注
-                                        text = ax.text(other_x - 100, other_y - 100,
-                                                       f'Risk: {current_connection_b_b_risk:.2f}',
-                                                       color='blue', fontsize=6, ha='center', fontweight='bold')
-                                        marked_base_station_texts[(other_x, other_y)] = text  # 将新标注存入字典
-
-                                    # 更新风险值字典
-                                    b_b_risk_values[(other_x, other_y)] = current_connection_b_b_risk
-                                    print(f'FC',frame_count)
-                                    print(f'frame_duration',frame_duration)
-                                    print(f'base_station_damage_durations:',base_station_damage_durations[other_idx])
-                                    print(f'damage_duration',damage_duration)
-                                    print(other_x, other_y, f'前', current_connection_b_b_risk)'''
+                                 
 
             # 更新上一帧状态
             base_station_previous_state[idx] = base_station_gdf.at[idx, 'status']
@@ -896,55 +812,6 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
         #print(f"Influenced base stations: {base_station_influenced_count}")
         #print(f"Normal base stations: {base_station_normal_count}")
 
-        # 计算电站引起链条风险值
-        '''
-        for idx, station in power_station_gdf.iterrows():
-            x, y = station.geometry.x, station.geometry.y
-            row, col = coord_to_index(x, y, transform)
-            if power_station_gdf.at[idx, 'status'] == 'Damaged':
-
-                damage_duration = frame_duration * (frame_count - power_station_damage_durations[idx] + 1)
-                unit_damage_loss_power_station2 = initial_unit_damage_loss_power_station * damage_duration
-                depth = water_depth[row, col]
-                probability = calculate_power_station_damage_probability(depth)
-
-                if (x, y) in marked_power_station_texts:
-                    print(f'XXXX')
-                    current_connection_p_r_risk = (probability * unit_damage_loss_power_station2
-                                                   + sum_of_connection(
-                                probability * unit_damage_loss_power_station2 * 0.47,
-                                power_station_counts[idx]))
-                    marked_power_station_texts[(x, y)].set_text(
-                        f'Risk: {current_connection_p_r_risk:.2f}')
-                    # 更新风险值字典
-                    p_r_risk_values[(x, y)] = current_connection_p_r_risk  # 存储最终值
-        # 绘制保存的标注
-
-        #  基站
-        for (x, y), risk_text in marked_base_station_texts.items():
-            # 获取当前坐标对应的风险值
-            risk_value = b_b_risk_values.get((x, y), 'N/A')
-
-            # 绘制标注
-            #ax.text(x - 100, y - 100, f'Risk: {risk_value:.2f}' if risk_value != 'N/A' else 'Risk: N/A',
-             #       color='blue', fontsize=6, ha='center', fontweight='bold')
-
-        #  基站
-        for (x, y), risk_text in marked_power_station_texts.items():
-            # 获取当前坐标对应的风险值
-            risk_value = p_b_risk_values.get((x, y), 'N/A')
-            if risk_value == 'N/A':
-                risk_value = p_r_risk_values.get((x, y), 'N/A')
-            #绘制标注
-            #ax.text(x - 100, y - 100, f'Risk: {risk_value:.2f}' if risk_value != 'N/A' else 'Risk: N/A',
-             #       color='blue', fontsize=6, ha='center', fontweight='bold')'''
-
-        total_loss = (total_road_damaged_loss + total_road_influenced_loss + total_building_damaged_loss +
-                      total_building_influenced_loss + total_power_station_damaged_loss + total_base_station_damaged_loss
-                      + total_base_station_influenced_loss)
-        total_risk = total_road_risk + total_power_station_risk + total_base_station_risk + total_building_risk
-        total_power_damaged_loss = total_power_station_damaged_loss + total_building_damaged_loss
-        total_power_influenced_loss = total_building_influenced_loss
         total_connection_risk = sum(b_b_risk_values.values()) + sum(p_b_risk_values.values()) + sum(
             p_r_risk_values.values())
         print(f'total_building_damaged_loss',total_building_damaged_loss)
@@ -959,14 +826,7 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
                           road_damage_length,road_influenced_length,road_normal_length
                          ,road_damage_count,road_influenced_count,road_normal_count
                           )
-        '''additional_info = (
-            f'总损失: {total_loss:.2f}\n'  # 总损失
-            f'总风险: {total_risk:.2f}\n'  # 总风险
-            f'灾害链条风险: {total_connection_risk:.2f}\n'  # 链风险'
-            f'交通损失: {total_road_damaged_loss + total_road_influenced_loss:.2f}\n'  # 道路损失
-            f'通讯损失: {total_base_station_damaged_loss+total_base_station_influenced_loss:.2f}\n'  # 基站损失
-            f'电力损失: {total_power_damaged_loss + total_power_influenced_loss:.2f}'  # 电站损失
-        )'''
+ 
 
         # 绘制图例
         legend_elements = [
@@ -996,14 +856,6 @@ def flood_simulation(buildings_file, roads_file, base_stations_file, power_stati
         # 确定文本位置，紧贴在图例框下方并右对齐
         text_x = legend_bbox.x1+0.0148  # 右对齐图例框
         text_y = legend_bbox.y1+0.059  # 紧贴图例框下方，距离控制在0.05以内
-
-        # 在指定位置显示整合文本信息
-
-        #ax.text(text_x, text_y, additional_info, transform=ax.transAxes,
-         #       fontsize=10, verticalalignment='top', horizontalalignment='right',
-          #      bbox=dict(facecolor='white', alpha=0.5))
-
-
 
         # 保存当前帧为图片
         # 保存每一帧图片
